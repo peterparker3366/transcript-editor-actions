@@ -1,0 +1,9 @@
+{
+  "name": "transcript-editor-actions",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {"start": "tsx src/transcript_editor.ts"},
+  "dependencies": {"openai": "^4.0.0"},
+  "devDependencies": {"tsx": "^4.0.0", "typescript": "^5.0.0"}
+}
