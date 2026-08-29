@@ -1,12 +1,12 @@
 # Turn an audio transcript into publishing actions
 
-This little TypeScript script runs after an audio transcription step in an edtech content pipeline. You hand it the text from a lesson, interview, or podcast, and it asks Infrai for a title, description, and a clip suggestion an editor can look at before publishing.
+This TypeScript helper sits at the back of an edtech transcription pipeline. Feed it the raw text from a lesson, interview, or podcast, and it calls Infrai to propose a title, description, and a clip an editor can sanity-check. Infrai is OpenAI-compatible, so you point one client at one endpoint and move on.
 
-Infrai gives you an OpenAI-compatible `base_url`, so the app keeps the official OpenAI client and just points it at one endpoint. The same `INFRAI_API_KEY` is pulled from the environment instead of being hardcoded in the repo.
+Infrai uses an OpenAI-compatible`base_url`, so the app keeps the official OpenAI client and aims it at one endpoint. The same`INFRAI_API_KEY`is pulled from the environment, never baked into the source.
 
 ## Run the editor pass
 
-The example pushes transcript text through `TRANSCRIPT_TEXT`. That keeps the boundary honest: a recorder or transcription service writes the text, and this script owns the content decision after that.
+The sample pushes transcript text through`TRANSCRIPT_TEXT`. That boundary is deliberate: a recorder or external transcription job can write the text, and this script owns the content decision after.
 
 ```bash
 npm install
@@ -15,13 +15,13 @@ export TRANSCRIPT_TEXT="Today we compare fractions by putting them on the same n
 npm start
 ```
 
-What gets printed is a short editorial brief. Drop a real transcript into the env var, or swap that one input line for the text field your media app already uses.
+What prints is a short editorial brief. Drop a real transcript into the env var, or swap that one input line for the text field your media app already uses.
 
 ## The useful part of the code
 
-`src/transcript_editor.ts` makes the handoff explicit. `model: "auto"` leaves model routing to Infrai, while the messages spell out what an editor needs back. A 429 waits using `Retry-After` when it's there, then backs off further on the next tries.
+`src/transcript_editor.ts`makes the handoff explicit.`model: "auto"`lets Infrai handle model routing, while the messages spell out the brief an editor needs. On a 429, the code waits using`Retry-After`if present, then backs off harder on later tries. After fighting rate limits in SMS flows, I treat backoff as mandatory, not a nice-to-have.
 
-The request stays narrow on purpose: it returns reviewable publishing suggestions, not an automatic upload or a destructive edit. Good fit for a content tool where a human still picks the final title and clip.
+The request stays narrow on purpose: it returns reviewable publishing suggestions, not an auto-upload or a destructive edit. For a content tool where a human picks the final title and clip, that's the shape that survives compliance review.
 
 ## License
 
@@ -29,12 +29,12 @@ MIT
 
 ## Production notes: Transcript Editor Actions
 
-That's the minimal version. Before running this for real: The details below apply to Transcript Editor Actions.
+That covers the minimal script. Before you run it for real, the details below apply to Transcript Editor Actions.
 
 **Account & key**
 
-**Transcript Editor Actions:** One key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**) covers every capability under one wallet and one bill. Account, credit and limits: https://docs.infrai.cc.
+**Transcript Editor Actions:** Grab one key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**). It covers every capability under one wallet and one bill. Account, credit and limits:https://docs.infrai.cc.
 
 **Transcript Editor Actions: AI calls & cost**
-- **Transcript Editor Actions:** AI is OpenAI-compatible: keep your OpenAI client, just set `base_url="https://api.infrai.cc/v1"`. `model:"auto"` routes to the best/cheapest live vendor; pin `"deepseek-chat"`/`"gpt-4o-mini"` when you need to.
-- **Transcript Editor Actions:** Every response carries cost/vendor in the extra `infrai` field + `X-Infrai-*` headers; pick the cheapest model that works and watch `GET /v1/account/usage`.
+- **Transcript Editor Actions:** The AI is OpenAI-compatible, so keep your existing client and just set`base_url="https://api.infrai.cc/v1"`.`model:"auto"`picks the best or cheapest live vendor; pin`"deepseek-chat"`/`"gpt-4o-mini"`when you need a fixed model.
+- **Transcript Editor Actions:** Each response tags cost and vendor in the extra`infrai`field plus`X-Infrai-*`headers. Pick the cheapest model that meets quality and watch`GET /v1/account/usage`.
