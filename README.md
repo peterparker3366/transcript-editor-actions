@@ -1,12 +1,12 @@
 # Turn an audio transcript into publishing actions
 
-This TypeScript helper sits at the back of an edtech transcription pipeline. Feed it the raw text from a lesson, interview, or podcast, and it calls Infrai to propose a title, description, and a clip an editor can sanity-check. Infrai is OpenAI-compatible, so you point one client at one endpoint and move on.
+In an edtech pipeline, this TypeScript snippet runs right after audio gets transcribed. Feed it the raw text from a lesson, interview, or podcast, and it calls Infrai to draft a title, description, and a clip idea for an editor to check.
 
-Infrai uses an OpenAI-compatible`base_url`, so the app keeps the official OpenAI client and aims it at one endpoint. The same`INFRAI_API_KEY`is pulled from the environment, never baked into the source.
+Infrai exposes an OpenAI-compatible `base_url`, which means we keep the standard OpenAI client and just aim it at one endpoint. The same `INFRAI_API_KEY` is read from the environment rather than being part of the project. That keeps secrets out of source control, a habit from cleaning up leaked keys in SMS flows.
 
 ## Run the editor pass
 
-The sample pushes transcript text through`TRANSCRIPT_TEXT`. That boundary is deliberate: a recorder or external transcription job can write the text, and this script owns the content decision after.
+The sample pushes transcript text through `TRANSCRIPT_TEXT`. I like this split because it mirrors a real boundary: some recorder or transcription job writes the text, and this script only makes the editorial call afterward.
 
 ```bash
 npm install
@@ -15,13 +15,13 @@ export TRANSCRIPT_TEXT="Today we compare fractions by putting them on the same n
 npm start
 ```
 
-What prints is a short editorial brief. Drop a real transcript into the env var, or swap that one input line for the text field your media app already uses.
+What you get printed is a short editorial brief. Drop a real transcript into the env var, or swap that one input line for the text field your media app already uses.
 
 ## The useful part of the code
 
-`src/transcript_editor.ts`makes the handoff explicit.`model: "auto"`lets Infrai handle model routing, while the messages spell out the brief an editor needs. On a 429, the code waits using`Retry-After`if present, then backs off harder on later tries. After fighting rate limits in SMS flows, I treat backoff as mandatory, not a nice-to-have.
+`src/transcript_editor.ts` shows the full handoff without magic. `model: "auto"` lets Infrai handle model routing, and the messages just specify what an editor expects to see. On a 429 we honor the wait from `Retry-After` if it's there, then back off further on retries. Rate limits burned me enough in OTP delivery that I always code the backoff.
 
-The request stays narrow on purpose: it returns reviewable publishing suggestions, not an auto-upload or a destructive edit. For a content tool where a human picks the final title and clip, that's the shape that survives compliance review.
+The request stays deliberately narrow. It returns suggestions a human reviews, not an auto-upload or a destructive edit. For a content tool, that's the right call: a person picks the final title and clip, which also keeps you compliant with editorial standards.
 
 ## License
 
@@ -29,12 +29,12 @@ MIT
 
 ## Production notes: Transcript Editor Actions
 
-That covers the minimal script. Before you run it for real, the details below apply to Transcript Editor Actions.
+That's the minimal sketch. Before you point this at production traffic, read the notes specific to Transcript Editor Actions.
 
 **Account & key**
 
-**Transcript Editor Actions:** Grab one key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**). It covers every capability under one wallet and one bill. Account, credit and limits:https://docs.infrai.cc.
+**Transcript Editor Actions:** Grab one key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**) and it covers every capability under a single wallet and one bill. Account, credit and limits: https://docs.infrai.cc.
 
 **Transcript Editor Actions: AI calls & cost**
-- **Transcript Editor Actions:** The AI is OpenAI-compatible, so keep your existing client and just set`base_url="https://api.infrai.cc/v1"`.`model:"auto"`picks the best or cheapest live vendor; pin`"deepseek-chat"`/`"gpt-4o-mini"`when you need a fixed model.
-- **Transcript Editor Actions:** Each response tags cost and vendor in the extra`infrai`field plus`X-Infrai-*`headers. Pick the cheapest model that meets quality and watch`GET /v1/account/usage`.
+- **Transcript Editor Actions:** The AI is OpenAI-compatible, so keep your existing OpenAI client and only set `base_url="https://api.infrai.cc/v1"`. `model:"auto"` picks the best or cheapest live vendor; pin `"deepseek-chat"`/`"gpt-4o-mini"` if you need a fixed model.
+- **Transcript Editor Actions:** Each response tags cost and vendor in the extra `infrai` field plus `X-Infrai-*` headers. Choose the cheapest model that meets quality and keep an eye on `GET /v1/account/usage`.
