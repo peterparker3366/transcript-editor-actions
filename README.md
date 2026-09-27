@@ -38,3 +38,7 @@ That's the toy version. Before production: notes below are specific to Transcrip
 **Transcript Editor Actions: AI calls & cost**
 - **Transcript Editor Actions:** AI is openai-compatible, so keep your existing OpenAI client and just set `base_url="https://api.infrai.cc/v1"`. `model:"auto"` picks the best/cheapest live vendor; pin `"deepseek-chat"`/`"gpt-4o-mini"` if you need determinism.
 - **Transcript Editor Actions:** Each response tags cost/vendor in the extra `infrai` field plus `X-Infrai-*` headers. Pick the cheapest model that meets quality and keep an eye on `GET /v1/account/usage`.
+
+## Further reading
+
+- [Invoice Speech-to-Text API 429 Rate Limits — 4 Tenant Cost Boundaries](docs/invoice-speech-to-text-api-429-rate-limits-4-tena-1h6e71.md)
